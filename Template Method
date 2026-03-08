@@ -1,0 +1,152 @@
+using System;
+
+abstract class ReportGenerator{
+    public void GenerateReport(){
+        Log("Начало генерации");
+        CreateHeader();
+        FormatData();
+        CreateBody();
+
+        if (CustomerWantsSave())
+            SaveReport();
+
+        if (CustomerWantsEmail())
+            SendEmail();
+
+        Log("Отчет создан");
+    }
+
+    void Log(string text){
+        Console.WriteLine("Журнал " + text);
+    }
+
+    protected abstract void CreateHeader();
+    protected abstract void FormatData();
+    protected abstract void CreateBody();
+
+    protected virtual void SaveReport(){
+        Console.WriteLine("Сохранение отчета");
+    }
+
+    protected virtual void SendEmail(){
+        Console.WriteLine("Отправка отчета по электронной почте");
+    }
+
+    protected virtual bool CustomerWantsSave(){
+        Console.WriteLine("Сохранить отчет? (д/н)");
+        string input = Console.ReadLine();
+
+        if (input == null) return false;
+
+        input = input.ToLower();
+
+        if (input == "д") return true;
+        if (input == "н") return false;
+
+        Console.WriteLine("Неверный ввод");
+        return false;
+    }
+
+    protected virtual bool CustomerWantsEmail(){
+        Console.WriteLine("Отправить отчет по почте? (д/н)");
+        string input = Console.ReadLine();
+
+        if (input == null) return false;
+
+        input = input.ToLower();
+
+        if (input == "д") return true;
+        if (input == "н") return false;
+
+        return false;
+    }
+}
+
+class PdfReport : ReportGenerator{
+    protected override void CreateHeader(){
+        Console.WriteLine("Создание заголовка PDF");
+    }
+
+    protected override void FormatData(){
+        Console.WriteLine("Форматирование PDF");
+    }
+
+    protected override void CreateBody(){
+        Console.WriteLine("Создание PDF отчета");
+    }
+}
+
+class ExcelReport : ReportGenerator{
+    protected override void CreateHeader(){
+        Console.WriteLine("Создание заголовка Excel");
+    }
+
+    protected override void FormatData(){
+        Console.WriteLine("Форматирование в таблицу Excel");
+    }
+
+    protected override void CreateBody()
+    {
+        Console.WriteLine("Создание Excel");
+    }
+
+    protected override void SaveReport(){
+        Console.WriteLine("Сохранение Excel");
+    }
+}
+
+class HtmlReport : ReportGenerator{
+    protected override void CreateHeader(){
+        Console.WriteLine("HTML заголовок");
+    }
+
+    protected override void FormatData(){
+        Console.WriteLine("Форматирование HTML");
+    }
+
+    protected override void CreateBody(){
+        Console.WriteLine("Создание HTML");
+    }
+}
+
+class CsvReport : ReportGenerator
+{
+    protected override void CreateHeader(){
+        Console.WriteLine("CSV");
+    }
+
+    protected override void FormatData(){
+        Console.WriteLine("через запятую");
+    }
+
+    protected override void CreateBody(){
+        Console.WriteLine("Создание строк CSV файла");
+    }
+}
+
+class Program{
+    static void Main(){
+        ReportGenerator pdf = new PdfReport();
+        ReportGenerator excel = new ExcelReport();
+        ReportGenerator html = new HtmlReport();
+        ReportGenerator csv = new CsvReport();
+
+        Console.WriteLine("PDF отчет");
+        pdf.GenerateReport();
+
+        Console.WriteLine();
+
+        Console.WriteLine("Excel отчет");
+        excel.GenerateReport();
+
+        Console.WriteLine();
+
+        Console.WriteLine("HTML отчет");
+        html.GenerateReport();
+
+        Console.WriteLine();
+
+        Console.WriteLine("CSV отчет");
+        csv.GenerateReport();
+    }
+}
