@@ -1,0 +1,127 @@
+using System;
+using System.Collections.Generic;
+
+interface IMediator{
+    void SendMessage(string channel, string message, IUser user);
+    void SendPrivate(string message, IUser from, IUser to);
+    void JoinChannel(string channel, IUser user);
+    void LeaveChannel(string channel, IUser user);
+}
+
+interface IUser{
+    string Name { get; }
+    void Receive(string message);
+}
+
+class ChannelMediator : IMediator{
+    Dictionary<string, List<IUser>> channels = new Dictionary<string, List<IUser>>();
+    HashSet<IUser> blocked = new HashSet<IUser>();
+
+    public void JoinChannel(string channel, IUser user){
+        if (!channels.ContainsKey(channel))
+            channels[channel] = new List<IUser>();
+
+        channels[channel].Add(user);
+
+        foreach (var u in channels[channel])
+            if (u != user)
+                u.Receive(user.Name + " вошел в " + channel);
+    }
+
+    public void LeaveChannel(string channel, IUser user){
+        if (!channels.ContainsKey(channel)) return;
+
+        channels[channel].Remove(user);
+
+        foreach (var u in channels[channel])
+            u.Receive(user.Name + " покинул " + channel);
+    }
+
+    public void SendMessage(string channel, string message, IUser user){
+        if (blocked.Contains(user)){
+            Console.WriteLine("заблокирован");
+            return;
+        }
+
+        if (!channels.ContainsKey(channel)){
+            Console.WriteLine("Канал не существует");
+            return;
+        }
+
+        if (!channels[channel].Contains(user)){
+            Console.WriteLine("Пользователь не найден");
+            return;
+        }
+
+        foreach (var u in channels[channel]){
+            if (u != user)
+                u.Receive("[" + channel + "] " + user.Name + ": " + message);
+        }
+    }
+
+    public void SendPrivate(string message, IUser from, IUser to){
+        if (blocked.Contains(from)) return;
+
+        to.Receive("(Личное) " + from.Name + ": " + message);
+    }
+
+    public void BlockUser(IUser user){
+        blocked.Add(user);
+        Console.WriteLine(user.Name + " заблокирован");
+    }
+}
+
+class User : IUser{
+    public string Name { get; private set; }
+    IMediator mediator;
+
+    public User(string name, IMediator mediator){
+        Name = name;
+        this.mediator = mediator;
+    }
+
+    public void Send(string channel, string message){
+        mediator.SendMessage(channel, message, this);
+    }
+
+    public void SendPrivate(IUser user, string message){
+        mediator.SendPrivate(message, this, user);
+    }
+
+    public void Receive(string message){
+        Console.WriteLine(Name + " получил: " + message);
+    }
+
+    public void Join(string channel){
+        mediator.JoinChannel(channel, this);
+    }
+
+    public void Leave(string channel){
+        mediator.LeaveChannel(channel, this);
+    }
+}
+
+class Program{
+    static void Main(){
+        ChannelMediator mediator = new ChannelMediator();
+
+        User user1 = new User("A1", mediator);
+        User user2 = new User("A2", mediator);
+        User user3 = new User("A3", mediator);
+
+        user1.Join("general");
+        user2.Join("general");
+        user3.Join("games");
+
+        user1.Send("general", "Привет");
+        user2.Send("general", "Привет!");
+
+        user3.Send("games", "Кто играет?");
+
+        user1.SendPrivate(user2, "Лс");
+
+        mediator.BlockUser(user2);
+
+        user2.Send("general", "Меня слышно?");
+    }
+}
