@@ -1,0 +1,160 @@
+using System;
+using System.Collections.Generic;
+
+interface ICommand{
+    void Execute();
+    void Undo();
+}
+
+class Light{
+    public void On() { Console.WriteLine("Свет включен"); }
+    public void Off() { Console.WriteLine("Свет выключен"); }
+}
+
+class TV{
+    public void On() { Console.WriteLine("Телевизор включен"); }
+    public void Off() { Console.WriteLine("Телевизор выключен"); }
+}
+
+class AirConditioner{
+    public void On() { Console.WriteLine("Кондиционер включен"); }
+    public void Off() { Console.WriteLine("Кондиционер выключен"); }
+}
+
+class LightOnCommand : ICommand{
+    Light light;
+    public LightOnCommand(Light light) { this.light = light; }
+    public void Execute() { light.On(); }
+    public void Undo() { light.Off(); }
+}
+
+class LightOffCommand : ICommand{
+    Light light;
+    public LightOffCommand(Light light) { this.light = light; }
+    public void Execute() { light.Off(); }
+    public void Undo() { light.On(); }
+}
+
+class TVOnCommand : ICommand{
+    TV tv;
+    public TVOnCommand(TV tv) { this.tv = tv; }
+    public void Execute() { tv.On(); }
+    public void Undo() { tv.Off(); }
+}
+
+class TVOffCommand : ICommand{
+    TV tv;
+    public TVOffCommand(TV tv) { this.tv = tv; }
+    public void Execute() { tv.Off(); }
+    public void Undo() { tv.On(); }
+}
+
+class ACOnCommand : ICommand{
+    AirConditioner ac;
+    public ACOnCommand(AirConditioner ac) { this.ac = ac; }
+    public void Execute() { ac.On(); }
+    public void Undo() { ac.Off(); }
+}
+
+class ACOffCommand : ICommand{
+    AirConditioner ac;
+    public ACOffCommand(AirConditioner ac) { this.ac = ac; }
+    public void Execute() { ac.Off(); }
+    public void Undo() { ac.On(); }
+}
+
+class MacroCommand : ICommand{
+    List<ICommand> commands;
+
+    public MacroCommand(List<ICommand> commands){
+        this.commands = commands;
+    }
+
+    public void Execute(){
+        foreach (var command in commands)
+            command.Execute();
+    }
+
+    public void Undo(){
+        foreach (var command in commands)
+            command.Undo();
+    }
+}
+
+class RemoteControl{
+    Dictionary<int, ICommand> slots = new Dictionary<int, ICommand>();
+    Stack<ICommand> undoStack = new Stack<ICommand>();
+    Stack<ICommand> redoStack = new Stack<ICommand>();
+
+    public void SetCommand(int slot, ICommand command){
+        slots[slot] = command;
+    }
+
+    public void PressButton(int slot){
+        if (!slots.ContainsKey(slot)){
+            Console.WriteLine("Команда не назначена");
+            return;
+        }
+
+        ICommand command = slots[slot];
+        command.Execute();
+        undoStack.Push(command);
+        redoStack.Clear();
+    }
+
+    public void Undo(){
+        if (undoStack.Count == 0){
+            Console.WriteLine("Нет команды для отмены");
+            return;
+        }
+
+        ICommand command = undoStack.Pop();
+        command.Undo();
+        redoStack.Push(command);
+    }
+
+    public void Redo(){
+        if (redoStack.Count == 0){
+            Console.WriteLine("Нет команды для повтора");
+            return;
+        }
+
+        ICommand command = redoStack.Pop();
+        command.Execute();
+        undoStack.Push(command);
+    }
+}
+
+class Program{
+    static void Main(){
+        Light light = new Light();
+        TV tv = new TV();
+        AirConditioner ac = new AirConditioner();
+
+        RemoteControl remote = new RemoteControl();
+
+        remote.SetCommand(1, new LightOnCommand(light));
+        remote.SetCommand(2, new TVOnCommand(tv));
+        remote.SetCommand(3, new ACOnCommand(ac));
+
+        List<ICommand> evening = new List<ICommand>(){
+            new LightOnCommand(light),
+            new TVOnCommand(tv),
+            new ACOnCommand(ac)
+        };
+
+        remote.SetCommand(4, new MacroCommand(evening));
+
+        remote.PressButton(1);
+        remote.PressButton(2);
+
+        remote.Undo();
+        remote.Redo();
+
+        remote.PressButton(4);
+
+        remote.Undo();
+
+        remote.PressButton(7);
+    }
+}
